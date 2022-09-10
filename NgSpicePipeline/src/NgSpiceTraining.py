@@ -73,7 +73,7 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
           margin=None, train_acc=False, sign=None):
     if margin is None:
         margin = [0.05]
-    print_every = 200
+    print_every = 5
     train_accs = []
     val_accs = []
     losses = []

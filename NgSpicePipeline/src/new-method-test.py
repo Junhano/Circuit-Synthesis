@@ -82,7 +82,7 @@ if __name__ == '__main__':
     simulator_two_stage.delete_existing_data = True
 
     train_netlist_lna = "../assets/LNA.sp"
-    test_netlist_lna = "../assets/LNA_test"
+    test_netlist_lna = "../assets/LNA_test.sp"
     param_list_lna = ["ls", "ld", "lg", "r", "w"]
     perform_list_lna = ["Gmax", "Gp", "s11", "nf"]
     arguments_lna = {
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     simulator.delete_existing_data = False
 
     # if you want to rerun training. MANDATORY of switching between circuits or altering arguments
-    rerun_training = True
+    rerun_training = False
 
     if rerun_training:
         x, y = simulator.run_training()
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     train_data = DataLoader(train_dataset, batch_size=100)
     val_data = DataLoader(val_dataset, batch_size=100)
     train_losses, val_losses, train_accs, val_accs = train(model, train_data, val_data, optimizer, loss_fn, scaler_arg,
-                                                     simulator, device=device, num_epochs=1000,
+                                                     simulator, device=device, num_epochs=200,
                                                        margin=MARGINS, train_acc=True, sign=SIGN)
     _, ax = plt.subplots()
     ax.set_title("Train and Val Losses")
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     ax.set_ylabel(f'validation Success rate')
     ax.set_xlabel(f'Epoch')
     ax.plot(range(len(val_accs)), val_accs)
-    ax.legend(MARGINS)
+    ax.legend(reversed(MARGINS))
     plt.show()
 
     _, ax = plt.subplots()
@@ -182,5 +182,5 @@ if __name__ == '__main__':
     ax.set_ylabel(f'train Success rate')
     ax.set_xlabel(f'Epoch')
     ax.plot(range(len(train_accs)), train_accs)
-    ax.legend(MARGINS)
+    ax.legend(reversed(MARGINS))
     plt.show()
