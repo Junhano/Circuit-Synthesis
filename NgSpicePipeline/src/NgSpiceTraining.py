@@ -1,16 +1,6 @@
-import os
-
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
-
 from Training import models, dataset
-import trainingUtils
-from torch import optim, cuda
 import torch
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from Simulator import Simulator
 from visualutils import *
 
 
@@ -65,8 +55,7 @@ def simulate_points(paramater_preds, norm_perform, scaler, simulator, margin, si
 
     _, y_sim = simulator.runSimulation(unnorm_param_preds)
     if final:
-        graph_get_margin_error(y_sim, unnorm_true_perform, sign)
-        return 0
+        return get_margin_error(y_sim, unnorm_true_perform, sign)
     else:
         assert y_sim.shape == unnorm_true_perform.shape, f"simulation failed, {y_sim.shape} != {unnorm_true_perform.shape}"
         assert y_sim.shape == norm_perform.shape, f"simulation failed, {y_sim.shape} != {norm_perform.shape}"
@@ -88,8 +77,10 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
     losses = []
     val_losses = []
 
-    final_param = None
-    final_perform = None
+    final_test_param = None
+    final_test_perform = None
+    final_train_param = None
+    final_train_perform = None
 
     for epoch in range(num_epochs):
         model.train()
@@ -125,17 +116,17 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
 
         losses.append(avg_loss)
         val_losses.append(val_avg_loss)
-        if (epoch + 1) % print_every == 0:
+        if (epoch + 1) % print_every == 0 or (num_epochs < print_every and epoch == num_epochs - 1):
             print('t = %d, loss = %.4f' % (epoch + 1, avg_loss))
             print('t = %d, val loss = %.4f' % (epoch + 1, val_avg_loss))
 
-        if (epoch + 1) % print_every == 0:
+        if (epoch + 1) % print_every == 0 or (num_epochs < print_every and epoch == num_epochs - 1):
             norm_perform, _ = val_data.dataset.getAll()
             model.eval()
-            paramater_preds = model(torch.Tensor(norm_perform)).detach().numpy()
+            paramater_preds = model(torch.Tensor(norm_perform).to(device)).to('cpu').detach().numpy()
             acc_list = simulate_points(paramater_preds, norm_perform, scaler, simulator, margin, sign)
-            final_param = paramater_preds
-            final_perform = norm_perform
+            final_test_param = paramater_preds
+            final_test_perform = norm_perform
             val_accs.append(acc_list)
             print(f"Validation Accuracy at Epoch {epoch} = {val_accs[-1][0]}")
             if train_acc:
@@ -147,8 +138,14 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
                 acc_list = simulate_points(paramater_preds, norm_perform, scaler, simulator, margin, sign)
                 train_accs.append(acc_list)
                 print(f"Training_Accuracy at Epoch {epoch} = {train_accs[-1][0]}")
-    simulate_points(final_param, final_perform, scaler, simulator, margin, sign, final=True)
-    return losses, val_losses, train_accs, val_accs
+                final_train_param = paramater_preds
+                final_train_perform = norm_perform
+    test_margin = simulate_points(final_test_param, final_test_perform, scaler, simulator, margin, sign, final=True)
+    if train_acc:
+        train_margin = simulate_points(final_train_param, final_train_perform, scaler, simulator, margin, sign, final=True)
+    else:
+        train_margin = []
+    return losses, val_losses, train_accs, val_accs, test_margin, train_margin
 
 
 def get_subsetdata_accuracy(X_train, y_train, X_test, y_test, percentages, optims, loss_fn, scaler_arg, simulator,
@@ -165,7 +162,7 @@ def get_subsetdata_accuracy(X_train, y_train, X_test, y_test, percentages, optim
         val_data = dataset.CircuitSynthesisGainAndBandwidthManually(X_test, y_test)
         train_dataloader = DataLoader(train_data, batch_size=100)
         val_dataloader = DataLoader(val_data, batch_size=100)
-        _, _, _, val_accs = train(model, train_dataloader, val_dataloader, optimizer, loss_fn, scaler_arg,
+        _, _, _, val_accs,_,_ = train(model, train_dataloader, val_dataloader, optimizer, loss_fn, scaler_arg,
                                   simulator, device, num_epochs=300)
 
         accs = []
@@ -178,3 +175,9 @@ def get_subsetdata_accuracy(X_train, y_train, X_test, y_test, percentages, optim
         plt.plot(range(len(acc)), acc, label=percentages[index])
     plt.legend()
     plt.show()
+
+
+def generate_subset_data(Train, Test, percentage):
+    subset_index = np.random.choice(np.arange(Train.shape[0]), int(percentage * Train.shape[0]), replace=False)
+
+    return Train[subset_index,:], Test[subset_index,:]
