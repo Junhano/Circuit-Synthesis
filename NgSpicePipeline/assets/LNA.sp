@@ -1,5 +1,5 @@
 circuit: LNA
-.include ../assets/45nm_CS.pm
+.include {model_path}
 
 .option TEMP=27C
 R2 vdd net7 700
@@ -19,25 +19,25 @@ V2 net6 0 dc 0 ac 0 portnum 2 z0 50
 
 .control
 
-let ls_start = 58.3p
-let ls_test = 58.3p
-let ls_stop = 60.3p
-let delta_ls = 0.25p
+let ls_start = {ls_start}
+let ls_test = {ls_start}
+let ls_stop = {ls_stop}
+let delta_ls = {ls_change}
 
-let ld_start = 4.4n
-let ld_test = 4.4n
-let ld_stop = 6n
-let delta_ld = 0.2n
+let ld_start = {ld_start}
+let ld_test = {ld_start}
+let ld_stop = {ld_stop}
+let delta_ld = {ld_change}
 
-let lg_start = 14.8n
-let lg_test = 14.8n
-let lg_stop = 16.4n
-let delta_lg = 0.2n
+let lg_start = {lg_start}
+let lg_test = {lg_start}
+let lg_stop = {lg_stop}
+let delta_lg = {lg_change}
 
-let w_start = 51u
-let w_test = 51u
-let w_stop = 52.8u
-let delta_w = 0.3u
+let w_start = {w_start}
+let w_test = {w_start}
+let w_stop = {w_stop}
+let delta_w = {w_change}
 
 while ls_test le ls_stop
     alter Ls = ls_test
@@ -55,17 +55,17 @@ while ls_test le ls_stop
 
                 let gmax = s21/s12
                 let Gmax2 = vecmax(gmax)
-                print Gmax2 >> ../out/Gp.csv
+                print Gmax2 >> {out}Gp.csv
 
-                print reals11 >> ../out/s11.csv
+                print reals11 >> {out}s11.csv
                 let nf = real(minimum(NF))
-                print nf >> ../out/nf.csv
+                print nf >> {out}nf.csv
 
 
-                print ls_test >> ../out/ls.csv
-                print ld_test >> ../out/ld.csv
-                print lg_test >> ../out/lg.csv
-                print w_test  >> ../out/w.csv
+                print ls_test >> {out}ls.csv
+                print ld_test >> {out}ld.csv
+                print lg_test >> {out}lg.csv
+                print w_test  >> {out}w.csv
                 set appendwrite
 
                 let w_test = w_test + delta_w
