@@ -1,7 +1,6 @@
 from Simulator import *
 
-
-def nmos_circuit(arguments_nmos=None, order=None, sign=None):
+def nmos_circuit(arguments_nmos = None, order=None, sign=None):
     ngspice_exec = "../../ngspice/Spice64/bin/ngspice.exe"
 
     train_netlist_nmos = "../assets/nmos-training.sp"
@@ -9,9 +8,9 @@ def nmos_circuit(arguments_nmos=None, order=None, sign=None):
     param_list_nmos = ["r", "w"]
     perform_list_nmos = ["bw", "pw", "a0"]
     if order is None:
-        order = [0, 2, 1]
+        order = [0,2,1]
     if sign is None:
-        sign = [1, -1, 1]
+        sign = [1,-1,1]
     if arguments_nmos is None:
         arguments_nmos = {
             "model_path": "../assets/45nm_CS.pm",
@@ -24,19 +23,19 @@ def nmos_circuit(arguments_nmos=None, order=None, sign=None):
             "out": "../out/"
         }
     return Simulator(ngspice_exec, train_netlist_nmos, test_netlist_nmos, param_list_nmos, perform_list_nmos,
-                     arguments_nmos, order, sign)
+                               arguments_nmos, order, sign)
 
 
-def cascade_circuit(arguments_cascade=None, order=None, sign=None):
+def cascade_circuit(arguments_cascade = None, order=None, sign=None):
     ngspice_exec = "../../ngspice/Spice64/bin/ngspice.exe"
     train_netlist_cascade = "../assets/nmos-training-cascode.sp"
     test_netlist_cascade = "../assets/nmos-testing-cascode.sp"
     param_list_cascade = ["r", "w0", "w1"]
     perform_list_cascade = ["bw", "pw", "a0"]
     if order is None:
-        order = [0, 2, 1]
+        order = [0,2,1]
     if sign is None:
-        sign = [1, -1, 1]
+        sign = [1,-1,1]
     if arguments_cascade is None:
         arguments_cascade = {
             "model_path": "../assets/45nm_CS.pm",
@@ -52,20 +51,19 @@ def cascade_circuit(arguments_cascade=None, order=None, sign=None):
             "out": "../out/"
         }
     return Simulator(ngspice_exec, train_netlist_cascade, test_netlist_cascade, param_list_cascade,
-                     perform_list_cascade,
-                     arguments_cascade, order, sign)
+                                  perform_list_cascade,
+                                  arguments_cascade, order, sign)
 
-
-def two_stage_circuit(arguments_two_stage=None, order=None, sign=None):
+def two_stage_circuit(arguments_two_stage = None, order=None, sign=None):
     ngspice_exec = "../../ngspice/Spice64/bin/ngspice.exe"
     train_netlist_two_stage = "../assets/TwoStageAmplifier.sp"
     test_netlist_two_stage = "../assets/TwoStageAmplifier-Test.sp"
     param_list_two_stage = ["w0", "w1", "w2"]
     perform_list_two_stage = ["bw", "pw", "a0"]
     if order is None:
-        order = [0, 2, 1]
+        order = [0,2,1]
     if sign is None:
-        sign = [1, -1, 1]
+        sign = [1,-1,1]
 
     if arguments_two_stage is None:
         arguments_two_stage = {
@@ -120,4 +118,5 @@ def LNA_circuit(arguments_lna=None, order=None, sign=None):
     simulator_lna = Simulator(ngspice_exec, train_netlist_lna, test_netlist_lna, param_list_lna, perform_list_lna,
                               arguments_lna,order,sign)
     simulator_lna.delete_existing_data = True
+
     return simulator_lna
