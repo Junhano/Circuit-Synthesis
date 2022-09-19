@@ -1,7 +1,6 @@
-
 import numpy as np
-
-
+from torch.utils.data import ConcatDataset
+import pandas as pd
 
 def generate_duplicate_data(train, test, thresholds):
     return_train, return_test = train, test
@@ -77,10 +76,11 @@ def generate_new_dataset_maximum_performance(performance, parameter, order, sign
     return np.array(new_performance), np.array(new_parameter)
 
 def get_margin_error(y_hat, y, sign=None):
-    sign = np.array(sign)
+
     temp_y_hat = y_hat
     temp_y = y
     if sign is not None:
+        sign = np.array(sign)
         temp_y_hat = y_hat * sign
         temp_y = y * sign
 
@@ -90,7 +90,43 @@ def get_margin_error(y_hat, y, sign=None):
     err = np.divide(a_err, y, where=y != 0)
 
     err = err * greater
-    max_err = np.max(np.abs(err), axis=1)
 
-    return max_err
+    return np.abs(err)
+
+
+
+
+def convert_dataset_to_array(dataset):
+
+    x,y = [], []
+
+    for i in range(len(dataset)):
+        temp_x, temp_y = dataset[i]
+        x.append(temp_x)
+        y.append(temp_y)
+
+    return np.array(x), np.array(y)
+
+
+def getDatafromDataloader(dataloader):
+    try:
+        return dataloader.dataset.getAll()
+    except:
+        perform_array, param_array = [], []
+        for i in range(len(dataloader.dataset)):
+            temp_perform, temp_param = dataloader.dataset[i]
+            perform_array.append(temp_perform)
+            param_array.append(temp_param)
+        perform_array = np.array(perform_array)
+        param_array = np.array(param_array)
+        return perform_array, param_array
+
+
+
+def save_output_data(result_files, circuit_name):
+
+    for k,v in result_files.items():
+        save_path = "../result_out/" + circuit_name + "-" + k + ".npy"
+        np.save(save_path, v)
+
 

@@ -1,8 +1,10 @@
+import numpy as np
 from torch.utils.data import DataLoader
 from Training import models, dataset
 import torch
 from trainingUtils import *
 import matplotlib.pyplot as plt
+from scipy import stats
 
 def check_acc(y_hat, y, margins=None):
     if margins is None:
@@ -66,7 +68,7 @@ def simulate_points(paramater_preds, norm_perform, scaler, simulator, sign, fina
         return accs
 
 
-def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, device='cpu', num_epochs=1000,
+def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, first_eval=0, device='cpu', num_epochs=1000,
           margin=None, train_acc=False, sign=None, print_every = 200):
     if margin is None:
         margin = [0.05]
@@ -81,20 +83,24 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
     final_train_param = None
     final_train_perform = None
 
-    norm_perform, _ = val_data.dataset.getAll()
-    model.eval()
-    paramater_preds = model(torch.Tensor(norm_perform).to(device)).to('cpu').detach().numpy()
-    acc_list = simulate_points(paramater_preds, norm_perform, scaler, simulator, margin, sign)
-    val_accs.append(acc_list)
-    print(f"Validation Accuracy Before Training")
-    if train_acc:
-        norm_perform, _ = train_data.dataset.getAll()
+    if first_eval is None:
+        first_eval = -1
+
+    if first_eval == 0:
+        norm_perform, _ = getDatafromDataloader(val_data)
         model.eval()
-        simulator.save_error_log = True
-        paramater_preds = model(torch.Tensor(norm_perform)).detach().numpy()
+        paramater_preds = model(torch.Tensor(norm_perform).to(device)).to('cpu').detach().numpy()
         acc_list = simulate_points(paramater_preds, norm_perform, scaler, simulator, margin, sign)
-        train_accs.append(acc_list)
-        print(f"Training_Accuracy at Epoch Before Training")
+        val_accs.append(acc_list)
+        print(f"Validation Accuracy Before Training")
+        if train_acc:
+            norm_perform, _ = getDatafromDataloader(train_data)
+            model.eval()
+            simulator.save_error_log = True
+            paramater_preds = model(torch.Tensor(norm_perform)).detach().numpy()
+            acc_list = simulate_points(paramater_preds, norm_perform, scaler, simulator, margin, sign)
+            train_accs.append(acc_list)
+            print(f"Training_Accuracy at Epoch Before Training")
 
 
     for epoch in range(num_epochs):
@@ -132,10 +138,10 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
         losses.append(avg_loss)
         val_losses.append(val_avg_loss)
 
-        if (epoch + 1) % print_every == 0 or (num_epochs < print_every and epoch == num_epochs - 1):
+        if (epoch + 1) == first_eval or (epoch + 1) % print_every == 0 or (num_epochs < print_every and epoch == num_epochs - 1):
             print('t = %d, loss = %.4f' % (epoch + 1, avg_loss))
             print('t = %d, val loss = %.4f' % (epoch + 1, val_avg_loss))
-            norm_perform, _ = val_data.dataset.getAll()
+            norm_perform, _ = getDatafromDataloader(val_data)
             model.eval()
             paramater_preds = model(torch.Tensor(norm_perform).to(device)).to('cpu').detach().numpy()
             acc_list = simulate_points(paramater_preds, norm_perform, scaler, simulator, sign, final=False)
@@ -144,7 +150,7 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
             val_accs.append(acc_list)
             print(f"Validation Accuracy at Epoch {epoch} = {val_accs[-1][1]}")
             if train_acc:
-                norm_perform, _ = train_data.dataset.getAll()
+                norm_perform, _ = getDatafromDataloader(train_data)
                 model.eval()
                 simulator.save_error_log = True
                 print(norm_perform, norm_perform.shape)
@@ -154,14 +160,21 @@ def train(model, train_data, val_data, optimizer, loss_fn, scaler, simulator, de
                 print(f"Training_Accuracy at Epoch {epoch} = {train_accs[-1][0]}")
                 final_train_param = paramater_preds
                 final_train_perform = norm_perform
-    test_margin = simulate_points(final_test_param, final_test_perform, scaler, simulator, sign, final=True)
+    test_margin_whole = simulate_points(final_test_param, final_test_perform, scaler, simulator, sign, final=True)
+    test_margin_average = np.average(test_margin_whole)
+    test_margin_performance_average = np.average(test_margin_whole, axis=0)
+    test_margin_std = stats.sem(test_margin_whole)
+    test_margin_performance_std = stats.sem(test_margin_whole, axis=0)
+    test_margin = np.max(test_margin_whole, axis=1)
 
 
     if train_acc:
-        train_margin = simulate_points(final_train_param, final_train_perform, scaler, simulator, sign, final=True)
+        train_margin_whole = simulate_points(final_train_param, final_train_perform, scaler, simulator, sign, final=True)
+        train_margin = np.max(train_margin_whole, axis=1)
     else:
         train_margin = []
-    return losses, val_losses, train_accs, val_accs, test_margin, train_margin
+    return losses, val_losses, train_accs, val_accs, test_margin, train_margin, test_margin_average, \
+           test_margin_performance_average, test_margin_std, test_margin_performance_std
 
 
 def get_subsetdata_accuracy(X_train, y_train, X_test, y_test, percentages, optims, loss_fn, scaler_arg, simulator,
@@ -179,7 +192,7 @@ def get_subsetdata_accuracy(X_train, y_train, X_test, y_test, percentages, optim
         train_dataloader = DataLoader(train_data, batch_size=100)
         val_dataloader = DataLoader(val_data, batch_size=100)
         _, _, _, val_accs,_,_ = train(model, train_dataloader, val_dataloader, optimizer, loss_fn, scaler_arg,
-                                  simulator, device, num_epochs=300)
+                                  simulator, device=device, num_epochs=300)
 
         accs = []
         for acc in val_accs:
@@ -201,13 +214,7 @@ def generate_subset_data(Train, Test, percentage):
 
 
 def generate_baseline_performance(X_train, X_test, sign):
-    #generate result to pass into get_margin_error function
-    #get_margin_error(y_hat, y, sign=None)
 
-    #X is performance requirement and y is the design specification
-
-
-    #y_hat is from X_train, and y is X_test
     temp_X_train = X_train * sign
     temp_X_test = X_test * sign
 
@@ -234,4 +241,6 @@ def generate_baseline_performance(X_train, X_test, sign):
     temp_y_hat = np.array(temp_y_hat)
 
     return get_margin_error(temp_y_hat, X_test, sign)
+
+
 
