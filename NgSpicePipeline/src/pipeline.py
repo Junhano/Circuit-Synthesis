@@ -97,8 +97,6 @@ def CrossFoldValidationPipeline(simulator, rerun_training, model_template, loss,
         subset_err_performance_std = []
         for i in range(split_time):
 
-            if i > 5:
-                break
             print('Running with Percentage {} Run Number {}'.format(percentage, i))
             if np.gcd(int(percentage * 100), 100) + int(percentage * 100) == 100:
                 concat_list = [SplitDataset[k] for k in range(len(SplitDataset)) if k != i]
