@@ -5,9 +5,13 @@ import subprocess
 import re
 import time
 import math
+import itertools
+import re
+
 
 class Simulator:
-    def __init__(self, ngspice_exec, train_netlist, test_netlist, parameter_list, performance_list, arguments, order, sign):
+    def __init__(self, ngspice_exec, train_netlist, test_netlist, parameter_list, performance_list, arguments, order,
+                 sign):
         self.ngspice_exec = ngspice_exec
         self.train_netlist = train_netlist
         self.test_netlist = test_netlist
@@ -84,7 +88,8 @@ class Simulator:
         argumentMap = self.arguments
         all_x, all_y = [], []
 
-        for i in range(math.ceil(num_params_to_sim / MAX_SIM_SIZE)):  # sim in batches of MAX_SIM_SIZE (ngspice has a max input size)
+        for i in range(math.ceil(
+                num_params_to_sim / MAX_SIM_SIZE)):  # sim in batches of MAX_SIM_SIZE (ngspice has a max input size)
 
             argumentMap["num_samples"] = parameters[i * MAX_SIM_SIZE:(i + 1) * MAX_SIM_SIZE, 0].shape[0]
 
@@ -103,7 +108,7 @@ class Simulator:
             subprocess.run(args)
 
             x, y = self.getData(self.test_param_filenames, self.test_perform_filenames, argumentMap["out"])
-            self._delete_testing_files()
+            # self._delete_testing_files()
             all_x.append(x)
             all_y.append(y)
 
@@ -133,6 +138,48 @@ class Simulator:
 
         return x, y
 
+    def run_quick_training(self):
+        if self.delete_existing_data:
+            self._delete_training_files()
+            self._delete_testing_files()
+
+        all_ranges = []
+
+        value_reg = r"[0-9]+\.?[0-9]*"
+        unit_reg = r"[a-z][A-Z]*"
+
+        for param in self.parameter_list:
+            start_raw = self.arguments[f"{param}_start"]
+            start = float(re.findall(value_reg, start_raw)[0])
+            start_unit = re.findall(unit_reg, start_raw)[0]
+
+            stop_raw = self.arguments[f"{param}_stop"]
+            stop = float(re.findall(value_reg, stop_raw)[0])
+            stop_unit = re.findall(unit_reg, stop_raw)[0]
+
+            change_raw = self.arguments[f"{param}_change"]
+            change = float(re.findall(value_reg, change_raw)[0])
+            change_unit = re.findall(unit_reg, change_raw)[0]
+
+            assert (start_unit == stop_unit == change_unit), f"not the same for all parts of range: parameter: " \
+                                                             f"{param}, start {stop_unit}, stop {stop_unit}, " \
+                                                             f"change {change_unit} "
+
+            param_range = []
+            curr = start
+            while curr <= stop:
+                param_range.append(str(curr) + stop_unit)
+                curr += change
+
+            all_ranges.append(list(param_range))
+
+        train_data = np.array(list(itertools.product(*all_ranges)))
+        print(f"training data size = {train_data.shape}")
+
+        x, y = self.runSimulation(train_data)
+
+        return x, y
+
     def _delete_training_files(self):
         out = self.arguments["out"]
         param_fullname = [os.path.join(out, file) for file in self.train_param_filenames]
@@ -157,5 +204,3 @@ class Simulator:
             except PermissionError:
                 time.sleep(1)
                 os.remove(file)
-
-
