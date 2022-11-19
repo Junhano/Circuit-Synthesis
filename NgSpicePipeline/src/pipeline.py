@@ -29,6 +29,7 @@ def SklearnModelPipeline(simulator, rerun_training, model, subset, duplication, 
     data = np.hstack((x, y))
 
     scaler_arg = MinMaxScaler(feature_range=(-1, 1))
+
     scaler_arg.fit(data)
     data = scaler_arg.transform(data)
 
@@ -160,6 +161,7 @@ def CrossFoldValidationPipeline(simulator, rerun_training, model_template, loss,
     data = np.hstack((x, y))
 
     scaler_arg = MinMaxScaler(feature_range=(-1, 1))
+
     scaler_arg.fit(data)
     data = scaler_arg.transform(data)
 
