@@ -68,8 +68,8 @@ def generate_new_dataset_maximum_performance(performance, parameter, order, sign
         best_temp_sample = None
 
         for x in range(len(eva_performance)):
-            order_temp_performance = (temp_performance * sign)[np.array(order)]
-            order_compare_performance = (eva_performance[x, :] * sign)[np.array(order)]
+            order_temp_performance = (temp_performance * sign)
+            order_compare_performance = (eva_performance[x, :] * sign)
 
             if (greater and np.all(order_compare_performance > order_temp_performance)) or \
                     (not greater and np.all(order_compare_performance >= order_temp_performance)):
@@ -78,7 +78,8 @@ def generate_new_dataset_maximum_performance(performance, parameter, order, sign
                 if best_temp_sample is None or cmp_helper(order_compare_performance, best_temp_sample):
                     best_temp_sample = new_temp_training_val
 
-
+        # temp_new_training_list store all the sample (sign converted performance metrics + parameter)
+        # best_temp_sample store the highest (sign converted performance metrics) combo
 
         if best_temp_sample is not None:
             if duplication == 0:
