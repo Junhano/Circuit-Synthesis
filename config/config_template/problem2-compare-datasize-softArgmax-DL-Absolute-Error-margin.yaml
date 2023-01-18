@@ -33,5 +33,9 @@ test_accuracy_per_epoch: False
 train_accuracy_per_epoch: False
 compare_dataset: False
 compare_method: False
+<<<<<<< HEAD
 subset_percentage: 1.0
+=======
+subset_parameter_check: True
+>>>>>>> 7411d285c6dc1cbff174b2986b69cb3b09af9487
 mode: replace
