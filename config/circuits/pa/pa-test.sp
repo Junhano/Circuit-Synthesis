@@ -43,9 +43,6 @@ mn2 net7 Vbias net16 0 NMOS w=22u l=45.0n
 mn1 net2 Vinp 0 0 NMOS w=22u l=45.0n 
 mn0 net6 Vbias net15 0 NMOS w=22u l=45.0n 
 .control
-set lint_array = ( {pa-lint_array} )
-set ls1_array = ( {pa-ls1_array} )
-set ls2_array = ( {pa-ls2_array} )
 set vb1_array = ( {pa-vb1_array} )
 set vb2_array = ( {pa-vb2_array} )
 set w1_array = ( {pa-w1_array} )
@@ -53,18 +50,8 @@ set w2_array = ( {pa-w2_array} )
 set i = {num_samples}
 let index = 1
 repeat $i
-alter L12 = $lint_array[$&index]
-alter L13 = $lint_array[$&index]
-alter L14 = $lint_array[$&index]
-alter L15 = $lint_array[$&index]
  
-alter L0 = $ls1_array[$&index]
-alter L1 = $ls1_array[$&index]
-alter L8 = $ls2_array[$&index]
-alter L9 = $ls2_array[$&index]
- 
-alter @V7[dc] = $vb1_array[$&index]
-      
+alter @V7[dc] = $vb1_array[$&index]   
 alter @V9[dc] = $vb2_array[$&index]
        
 alter @mn0[w] = $w1_array[$&index]
@@ -93,20 +80,14 @@ let PAE =  100 * (Pout - Pin)/Psupp
 print PAE >> {out}/pa-PAE1.csv
 let DE =100 * Pout/Psupp
 print DE >> {out}/pa-DE1.csv 
-let lint = $lint_array[$&index]
 let vb1 = $vb1_array[$&index]
 let vb2 = $vb2_array[$&index]
-let ls2 = $ls2_array[$&index]
 let w1 = $w1_array[$&index]
 let w2 = $w2_array[$&index]
-let ls1 = $ls1_array[$&index]
 print  w2 >> {out}/pa-w2.csv 
 print w1 >> {out}/pa-w1.csv
 print vb2 >> {out}/pa-vb2.csv
 print vb1 >> {out}/pa-vb1.csv
-print ls2 >> {out}/pa-ls2.csv
-print  ls1 >> {out}/pa-ls1.csv
-print lint >> {out}/pa-lint.csv
 let index = index + 1
 end
 .endc
