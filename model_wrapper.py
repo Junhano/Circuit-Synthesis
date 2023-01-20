@@ -41,6 +41,7 @@ class LookupWrapper:
         sign_performance_test = np.array(X) * self.sign
 
         lookup_parameter_test = []
+        
         for data_index in range(len(sign_performance_test)):
             minimum_err = None
             minimum_index = None

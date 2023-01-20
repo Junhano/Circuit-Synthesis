@@ -2,8 +2,6 @@ import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 
-
-
 def scale_down_data(parameter, performance, epsilon, sign):
     random_scale = np.random.uniform(0, epsilon, size=performance.shape)
     absolute_performance = np.absolute(performance)
@@ -214,7 +212,7 @@ class ArgMaxDataset(BaseDataset):
         subsample_index = np.random.choice(np.arange(0, parameter.shape[0]),
                                            size = max(int(parameter.shape[0] * self.subset_percentage),1), replace=False)
 
-        sampled_performance = np.array(performance[subsample_index])
+        sampled_performance = np.array(performance[subsample_index]) 
         sampled_parameter = np.array(parameter[subsample_index])
 
         for (temp_performance,temp_parameter) in zip(sampled_performance,sampled_parameter):
@@ -258,6 +256,7 @@ class SoftArgMaxDataset(ArgMaxDataset):
             return super().argmaxModifyData(parameter, scale_down_performance)
         else:
             return scale_down_data(test_parameter, test_performance, self.epsilon, self.sign)
+
 
 
 class AblationDuplicateDataset(SoftArgMaxDataset):

@@ -13,3 +13,6 @@ out/
 result_out/
 out-file.txt
 wandb/*
+*.npy
+*.png
+*.pm

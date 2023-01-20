@@ -83,11 +83,16 @@ def updateFile(trainingFilePath, outputFilePath, argumentMap,batch_index,path):
 def convert2numpy(filenames):
     files = []
     for file in filenames:
-        file_data = pd.read_csv(file, header=None)
-        file_data = file_data.apply(lambda x: re.split(r"\s+", str(x).replace("=", ""))[2], axis=1)
-        files.append(file_data)
-
+        try:
+            file_data = pd.read_csv(file, header=None)
+            file_data = file_data.apply(lambda x: re.split(r"\s+", str(x).replace("=", ""))[2], axis=1)
+            files.append(file_data)
+        except:
+            print('ERR HERE')
+            print(file)
+    
     combine = pd.concat(files, axis=1)
+   
     return np.array(combine, dtype=float)
 
 
@@ -143,6 +148,7 @@ def run_simulation_given_parameter(simulator, parameter_preds, train=False):
 def generate_performance_diff_metrics(performance_prediction, test_performance, simulator, train=False):
     margin_error = get_margin_error(performance_prediction, test_performance, simulator.sign)
     metrics_dict = dict()
+
     if train:
         metrics_dict["train_margins"] = np.max(margin_error, axis=1)
     else:
